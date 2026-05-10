@@ -1,1 +1,8 @@
-pip freeze > requirements.txt
+fastapi
+uvicorn
+sentence-transformers
+faiss-cpu
+numpy
+python-dotenv
+google-generativeai
+pydantic
