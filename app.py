@@ -24,6 +24,17 @@ class ChatRequest(BaseModel):
 
 
 # -----------------------------
+# Root Endpoint
+# -----------------------------
+
+@app.get("/")
+def root():
+    return {
+        "message": "SHL AI Assessment Recommendation API is running"
+    }
+
+
+# -----------------------------
 # Health Endpoint
 # -----------------------------
 
@@ -39,11 +50,19 @@ def health():
 @app.post("/chat")
 def chat(request: ChatRequest):
 
+    # Convert messages
     messages = [m.dict() for m in request.messages]
 
-    # Combine all user messages
+    # -----------------------------
+    # Combine conversation context
+    # -----------------------------
+
     conversation_context = " ".join(
-        [m["content"] for m in messages if m["role"] == "user"]
+        [
+            m["content"]
+            for m in messages
+            if m["role"] == "user"
+        ]
     )
 
     # -----------------------------
@@ -60,10 +79,16 @@ def chat(request: ChatRequest):
         "sports"
     ]
 
-    if any(topic in conversation_context.lower() for topic in blocked_topics):
+    if any(
+        topic in conversation_context.lower()
+        for topic in blocked_topics
+    ):
 
         return {
-            "reply": "I can only assist with SHL assessment recommendations.",
+            "reply": (
+                "I can only assist with "
+                "SHL assessment recommendations."
+            ),
             "recommendations": [],
             "end_of_conversation": False
         }
@@ -75,13 +100,16 @@ def chat(request: ChatRequest):
     intent = detect_intent(messages)
 
     # -----------------------------
-    # Clarification
+    # Clarification handling
     # -----------------------------
 
     if intent == "clarification":
 
         return {
-            "reply": "Could you specify the role, experience level, and required skills?",
+            "reply": (
+                "Could you specify the role, "
+                "experience level, and required skills?"
+            ),
             "recommendations": [],
             "end_of_conversation": False
         }
@@ -90,18 +118,28 @@ def chat(request: ChatRequest):
     # Retrieve assessments
     # -----------------------------
 
-    results = retrieve_assessments(conversation_context)
-
-    # Apply filtering
-    results = filter_results(results, conversation_context)
+    results = retrieve_assessments(
+        conversation_context
+    )
 
     # -----------------------------
-    # Comparison
+    # Apply filtering/reranking
+    # -----------------------------
+
+    results = filter_results(
+        results,
+        conversation_context
+    )
+
+    # -----------------------------
+    # Comparison mode
     # -----------------------------
 
     if intent == "comparison":
 
-        comparison_text = compare_assessments(results)
+        comparison_text = compare_assessments(
+            results
+        )
 
         return {
             "reply": comparison_text,
@@ -109,8 +147,8 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-        # -----------------------------
-    # Recommendations
+    # -----------------------------
+    # Build recommendations
     # -----------------------------
 
     recommendations = []
@@ -130,7 +168,7 @@ def chat(request: ChatRequest):
         })
 
     # -----------------------------
-    # Generate LLM Reply
+    # Generate conversational reply
     # -----------------------------
 
     reply_text = generate_reply(
@@ -139,7 +177,7 @@ def chat(request: ChatRequest):
     )
 
     # -----------------------------
-    # Final Response
+    # Final response
     # -----------------------------
 
     return {
