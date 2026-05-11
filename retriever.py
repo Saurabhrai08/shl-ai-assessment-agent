@@ -11,6 +11,21 @@ def retrieve_assessments(query):
 
     scored = []
 
+    # Important keywords
+    important_keywords = [
+        "java",
+        "python",
+        "developer",
+        "software",
+        "programming",
+        "coding",
+        "communication",
+        "teamwork",
+        "personality",
+        "sales",
+        "customer service"
+    ]
+
     for item in catalog:
 
         text = (
@@ -21,6 +36,26 @@ def retrieve_assessments(query):
 
         score = 0
 
+        # Strong keyword matching
+        for keyword in important_keywords:
+
+            if keyword in query and keyword in text:
+
+                # Technical keywords get higher weight
+                if keyword in [
+                    "java",
+                    "python",
+                    "developer",
+                    "programming",
+                    "coding",
+                    "software"
+                ]:
+                    score += 5
+
+                else:
+                    score += 2
+
+        # Basic word overlap
         for word in query.split():
 
             if word in text:
@@ -29,6 +64,7 @@ def retrieve_assessments(query):
         if score > 0:
             scored.append((score, item))
 
+    # Sort descending
     scored.sort(
         key=lambda x: x[0],
         reverse=True
