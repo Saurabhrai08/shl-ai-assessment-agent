@@ -10,9 +10,9 @@ from llm import generate_reply
 app = FastAPI()
 
 
-
+# -----------------------------
 # Schemas
-
+# -----------------------------
 
 class Message(BaseModel):
     role: str
@@ -23,9 +23,9 @@ class ChatRequest(BaseModel):
     messages: list[Message]
 
 
-
+# -----------------------------
 # Root Endpoint
-
+# -----------------------------
 
 @app.get("/")
 def root():
@@ -35,9 +35,9 @@ def root():
     }
 
 
-
+# -----------------------------
 # Health Endpoint
-
+# -----------------------------
 
 @app.get("/health")
 def health():
@@ -47,19 +47,22 @@ def health():
     }
 
 
-
+# -----------------------------
 # Chat Endpoint
-
+# -----------------------------
 
 @app.post("/chat")
 def chat(request: ChatRequest):
 
+    # -----------------------------
     # Convert messages
+    # -----------------------------
+
     messages = [m.dict() for m in request.messages]
 
-    
+    # -----------------------------
     # Turn limit protection
-
+    # -----------------------------
 
     if len(messages) >= 8:
 
@@ -72,9 +75,9 @@ def chat(request: ChatRequest):
             "end_of_conversation": True
         }
 
-    
+    # -----------------------------
     # Build conversation context
-    
+    # -----------------------------
 
     conversation_context = " ".join(
         [
@@ -88,9 +91,9 @@ def chat(request: ChatRequest):
         conversation_context.lower()
     )
 
-    
+    # -----------------------------
     # Off-topic + injection refusal
-    
+    # -----------------------------
 
     blocked_topics = [
         "weather",
@@ -129,15 +132,15 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-    
+    # -----------------------------
     # Detect intent
-    
+    # -----------------------------
 
     intent = detect_intent(messages)
 
-    
+    # -----------------------------
     # Clarification handling
-    
+    # -----------------------------
 
     if intent == "clarification":
 
@@ -150,26 +153,29 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-    
+    # -----------------------------
     # Retrieve assessments
-    
+    # -----------------------------
 
     results = retrieve_assessments(
         conversation_context
     )
 
-    
+    # -----------------------------
     # Apply filtering/reranking
-    
+    # -----------------------------
 
-    results = filter_results(
+    filtered_results = filter_results(
         results,
         conversation_context
     )
 
-    
+    if filtered_results:
+        results = filtered_results
+
+    # -----------------------------
     # Comparison mode
-    
+    # -----------------------------
 
     if intent == "comparison":
 
@@ -183,9 +189,9 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-    
+    # -----------------------------
     # Build recommendations
-    
+    # -----------------------------
 
     recommendations = []
 
@@ -203,18 +209,18 @@ def chat(request: ChatRequest):
             "test_type": test_type
         })
 
-    
+    # -----------------------------
     # Generate conversational reply
-    
+    # -----------------------------
 
     reply_text = generate_reply(
         conversation_context,
         results[:5]
     )
 
-    
+    # -----------------------------
     # Final response
-    
+    # -----------------------------
 
     return {
         "reply": reply_text,

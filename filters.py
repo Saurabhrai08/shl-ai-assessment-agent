@@ -25,7 +25,7 @@ def filter_results(results, query):
         score = 0
 
         # -----------------------------
-        # Java / Technical Matching
+        # Technical matching
         # -----------------------------
 
         tech_keywords = [
@@ -37,11 +37,12 @@ def filter_results(results, query):
         ]
 
         for word in tech_keywords:
+
             if word in query and word in text:
                 score += 3
 
         # -----------------------------
-        # Communication / Behavioral
+        # Communication / behavioral
         # -----------------------------
 
         if communication_needed:
@@ -54,12 +55,13 @@ def filter_results(results, query):
             ]
 
             for word in communication_keywords:
-                if word in text:
-                    score += 4
 
-            # Boost personality assessments
+                if word in text:
+                    score += 2
+
+            # Slight boost for personality tests
             if "Personality & Behavior" in item.get("keys", []):
-                score += 5
+                score += 3
 
         # -----------------------------
         # Keep useful results
@@ -68,7 +70,10 @@ def filter_results(results, query):
         if score > 0:
             scored_results.append((score, item))
 
+    # -----------------------------
     # Sort descending
+    # -----------------------------
+
     scored_results.sort(
         key=lambda x: x[0],
         reverse=True
