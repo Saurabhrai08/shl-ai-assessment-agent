@@ -10,9 +10,9 @@ from llm import generate_reply
 app = FastAPI()
 
 
-# -----------------------------
+
 # Schemas
-# -----------------------------
+
 
 class Message(BaseModel):
     role: str
@@ -23,29 +23,33 @@ class ChatRequest(BaseModel):
     messages: list[Message]
 
 
-# -----------------------------
+
 # Root Endpoint
-# -----------------------------
+
 
 @app.get("/")
 def root():
+
     return {
         "message": "SHL AI Assessment Recommendation API is running"
     }
 
 
-# -----------------------------
+
 # Health Endpoint
-# -----------------------------
+
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+
+    return {
+        "status": "ok"
+    }
 
 
-# -----------------------------
+
 # Chat Endpoint
-# -----------------------------
+
 
 @app.post("/chat")
 def chat(request: ChatRequest):
@@ -53,9 +57,24 @@ def chat(request: ChatRequest):
     # Convert messages
     messages = [m.dict() for m in request.messages]
 
-    # -----------------------------
-    # Combine conversation context
-    # -----------------------------
+    
+    # Turn limit protection
+
+
+    if len(messages) >= 8:
+
+        return {
+            "reply": (
+                "Conversation limit reached. "
+                "Please start a new request."
+            ),
+            "recommendations": [],
+            "end_of_conversation": True
+        }
+
+    
+    # Build conversation context
+    
 
     conversation_context = " ".join(
         [
@@ -65,9 +84,13 @@ def chat(request: ChatRequest):
         ]
     )
 
-    # -----------------------------
-    # Off-topic refusal
-    # -----------------------------
+    conversation_context_lower = (
+        conversation_context.lower()
+    )
+
+    
+    # Off-topic + injection refusal
+    
 
     blocked_topics = [
         "weather",
@@ -76,32 +99,45 @@ def chat(request: ChatRequest):
         "legal",
         "stock market",
         "movie",
-        "sports"
+        "sports",
+
+        # Prompt injection attempts
+        "ignore previous instructions",
+        "ignore all instructions",
+        "system prompt",
+        "reveal prompt",
+        "show hidden prompt",
+        "bypass",
+        "jailbreak",
+        "developer message",
+        "internal instructions",
+        "override instructions"
     ]
 
     if any(
-        topic in conversation_context.lower()
+        topic in conversation_context_lower
         for topic in blocked_topics
     ):
 
         return {
             "reply": (
-                "I can only assist with "
-                "SHL assessment recommendations."
+                "I can only assist with SHL assessment "
+                "recommendations and cannot follow "
+                "unrelated or unsafe instructions."
             ),
             "recommendations": [],
             "end_of_conversation": False
         }
 
-    # -----------------------------
+    
     # Detect intent
-    # -----------------------------
+    
 
     intent = detect_intent(messages)
 
-    # -----------------------------
+    
     # Clarification handling
-    # -----------------------------
+    
 
     if intent == "clarification":
 
@@ -114,26 +150,26 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-    # -----------------------------
+    
     # Retrieve assessments
-    # -----------------------------
+    
 
     results = retrieve_assessments(
         conversation_context
     )
 
-    # -----------------------------
+    
     # Apply filtering/reranking
-    # -----------------------------
+    
 
     results = filter_results(
         results,
         conversation_context
     )
 
-    # -----------------------------
+    
     # Comparison mode
-    # -----------------------------
+    
 
     if intent == "comparison":
 
@@ -147,9 +183,9 @@ def chat(request: ChatRequest):
             "end_of_conversation": False
         }
 
-    # -----------------------------
+    
     # Build recommendations
-    # -----------------------------
+    
 
     recommendations = []
 
@@ -167,21 +203,21 @@ def chat(request: ChatRequest):
             "test_type": test_type
         })
 
-    # -----------------------------
+    
     # Generate conversational reply
-    # -----------------------------
+    
 
     reply_text = generate_reply(
         conversation_context,
         results[:5]
     )
 
-    # -----------------------------
+    
     # Final response
-    # -----------------------------
+    
 
     return {
         "reply": reply_text,
         "recommendations": recommendations,
-        "end_of_conversation": False
+        "end_of_conversation": True
     }
